@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Pegawai</title>
+</head>
+<body>
+    <h2>Edit Data Pegawai</h2>
+
+    <form action="/admin/pegawai/edit/{{ pegawai.id_pegawai }}" method="post">
+        <label>Nama:</label><br>
+        <input type="text" name="nama" value="{{ pegawai.nama }}" required><br><br>
+
+        <label>Email:</label><br>
+        <input type="email" name="email" value="{{ pegawai.email }}" required><br><br>
+
+        <label>Jabatan:</label><br>
+        <input type="text" name="jabatan" value="{{ pegawai.jabatan }}" required><br><br>
+
+        <label>Pangkat:</label><br>
+        <input type="text" name="pangkat" value="{{ pegawai.pangkat }}" required><br><br>
+
+        <button type="submit">Simpan Perubahan</button>
+    </form>
+
+    <br>
+    <a href="/admin/pegawai">Kembali</a>
+</body>
+</html>

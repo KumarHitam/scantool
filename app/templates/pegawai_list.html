@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Kelola Pegawai</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 40px;
+        }
+
+        h2, h3 {
+            text-align: center;
+            color: #333;
+        }
+
+        form {
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            width: 600px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="number"],
+        input[type="password"] {
+            width: 95%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        table {
+            width: 90%;
+            margin: 30px auto;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .hapus-btn {
+            background-color: #dc3545;
+        }
+
+        .hapus-btn:hover {
+            background-color: #a71d2a;
+        }
+
+        .edit-btn {
+            background-color: #ffc107;
+            color: black;
+        }
+
+        .edit-btn:hover {
+            background-color: #e0a800;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h2>Manajemen Data Pegawai</h2>
+
+    <form method="post" action="/admin/pegawai/tambah">
+        <h3>Tambah Pegawai Baru</h3>
+        <input type="text" name="nama" placeholder="Nama" required>
+        <input type="email" name="email" placeholder="Email" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <input type="text" name="jabatan" placeholder="Jabatan">
+        <input type="text" name="pangkat" placeholder="Pangkat">
+        <input type="number" name="NRP" placeholder="NRP">
+        <button type="submit">Tambah Pegawai</button>
+    </form>
+
+    <h3>Daftar Pegawai</h3>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Nama</th>
+            <th>Email</th>
+            <th>Jabatan</th>
+            <th>Pangkat</th>
+            <th>NRP</th>
+            <th>Aksi</th>
+        </tr>
+        {% for p in pegawai %}
+        <tr>
+            <td>{{ p.id_pegawai }}</td>
+            <td>{{ p.nama }}</td>
+            <td>{{ p.email }}</td>
+            <td>{{ p.jabatan or '-' }}</td>
+            <td>{{ p.pangkat or '-' }}</td>
+            <td>{{ p.NRP or '-' }}</td>
+            <td>
+                <!-- Tombol Edit -->
+                <a href="/admin/pegawai/edit/{{ p.id_pegawai }}">
+                    <button type="button" class="edit-btn">Edit</button>
+                </a>
+
+                <!-- Tombol Hapus -->
+                <form method="post" action="/admin/pegawai/hapus" style="display:inline;">
+                    <input type="hidden" name="id_pegawai" value="{{ p.id_pegawai }}">
+                    <button type="submit" class="hapus-btn">Hapus</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="7"><em>Belum ada data pegawai</em></td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <a href="/admin/dashboard" class="back-link">← Kembali ke Dashboard</a>
+</body>
+</html>

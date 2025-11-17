@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Profil Pegawai</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #eef2f5;
+            padding: 40px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .info {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+        a, button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+        }
+        a:hover, button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <h2>Profil Pegawai</h2>
+
+    <div class="info">
+        <p><strong>ID Pegawai:</strong> {{ pegawai.id_pegawai }}</p>
+        <p><strong>Nama:</strong> {{ pegawai.nama }}</p>
+        <p><strong>Email:</strong> {{ pegawai.email }}</p>
+        <p><strong>Jabatan:</strong> {{ pegawai.jabatan }}</p>
+        <p><strong>Pangkat:</strong> {{ pegawai.pangkat }}</p>
+    </div>
+
+    <a href="/pegawai/edit/{{ pegawai.id_pegawai }}">Edit Profil</a>
+    <br>
+    <a href="/pegawai/dashboard/{{ pegawai.id_pegawai }}">Kembali</a>
+
+</div>
+</body>
+</html>

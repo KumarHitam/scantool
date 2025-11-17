@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Pegawai</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f8;
+            text-align: center;
+            padding: 60px;
+        }
+        h2 {
+            color: #2c3e50;
+        }
+        .btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+        }
+        .blue { background-color: #3498db; }
+        .blue:hover { background-color: #2980b9; }
+
+        .red { background-color: #e74c3c; }
+        .red:hover { background-color: #c0392b; }
+    </style>
+</head>
+<body>
+    <h2>Selamat Datang, {{ pegawai.nama }}</h2>
+    <p>Email: {{ pegawai.email }}</p>
+
+    <!-- Tombol Lihat Profil -->
+    <a href="/pegawai/profil/{{ pegawai.id_pegawai }}" class="btn blue">Lihat Profil</a>
+    <br><br>
+
+    <!-- Tombol Logout -->
+    <form action="/pegawai/logout" method="get">
+        <button type="submit" class="btn red">Logout</button>
+    </form>
+</body>
+</html>
