@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>Scanner Dashboard — Realtime</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+  <div class="topbar">
+    <h1>🔍 Scanner Dashboard</h1>
+
+    <label class="toggle">
+      <input id="darkToggle" type="checkbox">
+      <span>Dark</span>
+    </label>
+  </div>
+
+  <main class="container">
+    
+    <!-- QUICK SCAN -->
+    <section class="card">
+      <h2>Quick Scan</h2>
+      <div class="row">
+        <input id="quick-url" placeholder="https://example.com" />
+        <button id="btn-quick" class="btn">Scan</button>
+      </div>
+      <p class="muted">Gunakan quick scan untuk 1 URL.</p>
+    </section>
+
+    <!-- BULK SCAN -->
+    <section class="card">
+      <h2>Bulk Scan (1 URL per baris)</h2>
+      <textarea id="bulk-urls" rows="6" placeholder="https://a.com
+https://b.com"></textarea>
+
+      <div class="row">
+        <button id="btn-bulk" class="btn">Mulai</button>
+        <button id="btn-stop-bulk" class="btn ghost" disabled>Stop</button>
+      </div>
+    </section>
+
+    <!-- FILTER -->
+    <section class="card">
+      <h2>Filter Hasil</h2>
+      <div class="row space">
+        <label><input type="radio" name="filter" value="all" checked> Semua</label>
+        <label><input type="radio" name="filter" value="ok"> 2xx</label>
+        <label><input type="radio" name="filter" value="err"> Error</label>
+      </div>
+    </section>
+
+    <!-- CHART -->
+    <section class="card charts">
+      <div class="chart-card">
+        <h3>Latency</h3>
+        <canvas id="latencyChart"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <h3>Requests/min</h3>
+        <canvas id="rpmChart"></canvas>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="card">
+      <h2>Riwayat</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>URL</th>
+            <th>Status</th>
+            <th>Latency</th>
+            <th>Waktu</th>
+          </tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+      </table>
+      <p id="stats" class="muted"></p>
+    </section>
+
+  </main>
+
+  <audio id="notifSound" src="/static/sfx/notify.mp3" preload="auto"></audio>
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

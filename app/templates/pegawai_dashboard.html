@@ -1,44 +1,166 @@
-<!DOCTYPE html>
-<html lang="id">
+<!-- app/templates/pegawai_dashboard.html -->
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Dashboard Pegawai</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f6f8;
-            text-align: center;
-            padding: 60px;
-        }
-        h2 {
-            color: #2c3e50;
-        }
-        .btn {
-            display: inline-block;
-            margin-top: 15px;
-            padding: 10px 20px;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-        }
-        .blue { background-color: #3498db; }
-        .blue:hover { background-color: #2980b9; }
-
-        .red { background-color: #e74c3c; }
-        .red:hover { background-color: #c0392b; }
-    </style>
+  <meta charset="utf-8">
+  <title>Pegawai Dashboard - Scanner</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
-    <h2>Selamat Datang, {{ pegawai.nama }}</h2>
-    <p>Email: {{ pegawai.email }}</p>
+<body class="bg-gray-900 text-gray-100">
+  <div class="max-w-6xl mx-auto p-6">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold text-cyan-400">Scanner Dashboard</h1>
+      <div>
+        <a href="/logout" class="px-4 py-2 bg-red-500 text-white rounded">Logout</a>
+      </div>
+    </div>
 
-    <!-- Tombol Lihat Profil -->
-    <a href="/pegawai/profil/{{ pegawai.id_pegawai }}" class="btn blue">Lihat Profil</a>
-    <br><br>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="md:col-span-2 space-y-4">
+        <div class="bg-gray-800 rounded-lg p-4">
+          <div class="flex gap-2 items-center">
+            <input id="urlInput" class="flex-1 px-3 py-2 rounded bg-gray-900 text-gray-100" placeholder="masukkan url (contoh: google.com)">
+            <button id="scanBtn" class="px-4 py-2 bg-cyan-400 text-black rounded font-semibold">Scan Web</button>
+            <button id="bulkBtn" class="px-4 py-2 bg-yellow-400 text-black rounded font-semibold">Bulk</button>
+          </div>
+          <div class="mt-4">
+            <canvas id="latencyChart" height="120"></canvas>
+          </div>
+        </div>
 
-    <!-- Tombol Logout -->
-    <form action="/pegawai/logout" method="get">
-        <button type="submit" class="btn red">Logout</button>
-    </form>
+        <div class="bg-gray-800 rounded-lg p-4">
+          <h2 class="text-lg font-semibold mb-2">Results</h2>
+          <pre id="resultBox" class="whitespace-pre-wrap max-h-64 overflow-auto bg-black p-3 rounded text-green-200">No scan yet.</pre>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg p-4">
+          <h2 class="text-lg font-semibold mb-2">History</h2>
+          <div class="overflow-auto max-h-72">
+            <table class="w-full text-sm">
+              <thead><tr class="text-left text-gray-400"><th class="p-2">ID</th><th>URL</th><th>Code</th><th>Latency</th><th>Source</th><th>Time</th></tr></thead>
+              <tbody id="historyBody" class="text-gray-200"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div class="bg-gray-800 rounded-lg p-4">
+          <h3 class="font-semibold mb-2">Network / Agent</h3>
+          <div class="space-y-2">
+            <button id="networkBtn" class="w-full px-4 py-2 bg-indigo-500 rounded">Scan Local Network</button>
+            <button id="agentBtn" class="w-full px-4 py-2 bg-emerald-400 text-black rounded">Call Agent</button>
+            <div class="mt-3">
+              <div><strong>Agent status:</strong> <span id="agentStatus" class="text-red-400">offline</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg p-4">
+          <h3 class="font-semibold mb-2">Controls</h3>
+          <label class="block text-sm text-gray-300">Concurrency (bulk)</label>
+          <input id="concurrency" type="number" min="1" value="8" class="mt-2 w-full px-2 py-1 bg-gray-900 rounded" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const apiPrefix = '/scan'; // because we mounted router at /scan
+const chartCtx = document.getElementById('latencyChart').getContext('2d');
+const dataObj = { labels: [], datasets: [{ label: 'Latency (ms)', data: [], tension:0.3, borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.2)' }]};
+const chart = new Chart(chartCtx, { type: 'line', data: dataObj, options: { scales: { y: { beginAtZero: true } } } });
+
+function pushChart(label, ms){
+  if(dataObj.labels.length>40){ dataObj.labels.shift(); dataObj.datasets[0].data.shift(); }
+  dataObj.labels.push(label); dataObj.datasets[0].data.push(ms||0); chart.update();
+}
+
+async function loadHistory(){
+  try{
+    const res = await fetch(apiPrefix + '/history?limit=30');
+    const j = await res.json();
+    const body = document.getElementById('historyBody'); body.innerHTML='';
+    if(j.ok){
+      j.rows.forEach(r=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td class="p-2">${r.id}</td><td>${r.url}</td><td>${r.status_code||'-'}</td><td>${r.latency_ms||'-'}</td><td>${r.source}</td><td>${r.created_at}</td>`;
+        body.appendChild(tr);
+      });
+    }
+  }catch(e){ console.error(e); }
+}
+
+document.getElementById('scanBtn').addEventListener('click', async ()=>{
+  const url = document.getElementById('urlInput').value.trim();
+  if(!url) return alert('Masukkan URL');
+  document.getElementById('resultBox').textContent = 'Scanning...';
+  try{
+    const r = await fetch(apiPrefix + '/web', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url})});
+    const j = await r.json();
+    document.getElementById('resultBox').textContent = JSON.stringify(j, null, 2);
+    if(j.ok && j.result) pushChart(new Date().toLocaleTimeString(), j.result.elapsed_ms);
+    await loadHistory();
+  }catch(e){ document.getElementById('resultBox').textContent = 'Error: '+e; }
+});
+
+document.getElementById('bulkBtn').addEventListener('click', async ()=>{
+  const txt = prompt('Masukkan banyak URL (pisah baris)');
+  if(!txt) return;
+  const urls = txt.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  document.getElementById('resultBox').textContent = 'Bulk scanning ' + urls.length + ' urls...';
+  try{
+    const r = await fetch(apiPrefix + '/bulk', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({urls})});
+    const j = await r.json();
+    document.getElementById('resultBox').textContent = JSON.stringify(j, null, 2);
+    await loadHistory();
+  }catch(e){ document.getElementById('resultBox').textContent = 'Error: '+e; }
+});
+
+document.getElementById('networkBtn').addEventListener('click', async ()=>{
+  document.getElementById('resultBox').textContent = 'Scanning network (this runs on server)...';
+  try{
+    const r = await fetch(apiPrefix + '/network');
+    const j = await r.json();
+    document.getElementById('resultBox').textContent = JSON.stringify(j, null, 2);
+    await loadHistory();
+  }catch(e){ document.getElementById('resultBox').textContent = 'Error: '+e; }
+});
+
+document.getElementById('agentBtn').addEventListener('click', async ()=>{
+  document.getElementById('resultBox').textContent = 'Contacting agent...';
+  try{
+    const r = await fetch(apiPrefix + '/agent'); // backend will call local agent
+    const j = await r.json();
+    document.getElementById('resultBox').textContent = JSON.stringify(j, null, 2);
+    await loadHistory();
+  }catch(e){ document.getElementById('resultBox').textContent = 'Error: '+e; }
+});
+
+// WebSocket for realtime
+const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/scan/ws');
+ws.onopen = ()=>{ document.getElementById('agentStatus').textContent = 'online'; document.getElementById('agentStatus').className='text-green-400'; };
+ws.onmessage = ev=>{
+  try{
+    const msg = JSON.parse(ev.data);
+    if(msg.type === 'scan_result'){
+      const d = msg.data;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="p-2">${d.id}</td><td>${d.url}</td><td>${d.status_code||'-'}</td><td>${d.latency_ms||'-'}</td><td>live</td><td>${d.created_at}</td>`;
+      document.getElementById('historyBody').prepend(tr);
+      pushChart(new Date().toLocaleTimeString(), d.latency_ms);
+    } else if(msg.type === 'agent_result'){
+      document.getElementById('resultBox').textContent = 'Agent result: ' + JSON.stringify(msg.data, null, 2);
+    } else if(msg.type === 'network_result'){
+      document.getElementById('resultBox').textContent = 'Network scan result: ' + JSON.stringify(msg.data, null, 2);
+    }
+  }catch(e){ console.error(e) }
+};
+ws.onclose = ()=>{ document.getElementById('agentStatus').textContent = 'offline'; document.getElementById('agentStatus').className='text-red-400'; };
+
+window.addEventListener('load', loadHistory);
+</script>
 </body>
 </html>

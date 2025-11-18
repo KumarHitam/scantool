@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scanner — Bulk & Realtime</title>
+
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+  <div class="topbar">
+    <h1>🔍 Web Scanner — Realtime</h1>
+
+    <div>
+      <label class="toggle">
+        <input id="darkToggle" type="checkbox" />
+        <span>Dark</span>
+      </label>
+    </div>
+  </div>
+
+  <main class="container">
+
+    <!-- QUICK SCAN -->
+    <section class="card">
+      <h2>Quick Scan</h2>
+
+      <div class="row">
+        <input id="quick-url" placeholder="https://example.com atau example.com" />
+        <button id="btn-quick" class="btn">Scan</button>
+      </div>
+
+      <p class="muted">Gunakan quick scan untuk test 1 URL.</p>
+    </section>
+
+    <!-- BULK SCAN -->
+    <section class="card">
+      <h2>Bulk Scan (1 URL per baris)</h2>
+
+      <div class="row">
+        <textarea
+          id="bulk-urls"
+          placeholder="https://a.com&#10;https://b.com&#10;example.com"
+          rows="6"
+        ></textarea>
+      </div>
+
+      <div class="row">
+        <button id="btn-bulk" class="btn">Start Bulk Scan</button>
+        <button id="btn-stop-bulk" class="btn ghost" disabled>Stop</button>
+      </div>
+
+      <p class="muted">
+        Batas concurrency sisi server: 8 (bisa diubah di backend).
+      </p>
+    </section>
+
+    <!-- FILTERS -->
+    <section class="card">
+      <h2>Filters</h2>
+
+      <div class="row space">
+        <label><input type="radio" name="filter" value="all" checked /> Semua</label>
+        <label><input type="radio" name="filter" value="ok" /> Sukses (status 2xx)</label>
+        <label><input type="radio" name="filter" value="err" /> Error / 5xx / timeout</label>
+      </div>
+    </section>
+
+    <!-- CHARTS -->
+    <section class="card charts">
+      <div class="chart-card">
+        <h3>Latency (terakhir)</h3>
+        <canvas id="latencyChart"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <h3>Requests per Minute</h3>
+        <canvas id="rpmChart"></canvas>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="card">
+      <h2>Riwayat Scan (Realtime)</h2>
+
+      <table id="history-table">
+        <thead>
+          <tr>
+            <th>URL</th>
+            <th>Status</th>
+            <th>Latency</th>
+            <th>Waktu</th>
+          </tr>
+        </thead>
+
+        <tbody id="history-body"></tbody>
+      </table>
+
+      <div id="stats" class="muted"></div>
+    </section>
+  </main>
+
+  <!-- Notification sound -->
+  <audio id="notifSound" src="/static/sfx/notify.mp3" preload="auto"></audio>
+
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

@@ -1,50 +1,68 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
+
+# Router
 from app.routes import admin, pegawai, auth
+from app.routes.scan import router as scan_router
+
+# Database
 from app.db.database import Base, engine
 
-# Buat tabel di database jika belum ada
+# ===============================
+#  CREATE TABLES (AUTO)
+# ===============================
 Base.metadata.create_all(bind=engine)
 
-# Inisialisasi aplikasi
-app = FastAPI(title="Sistem Login & CRUD Pegawai")
+# ===============================
+#  INIT FASTAPI
+# ===============================
+app = FastAPI(
+    title="Sistem Login, CRUD Pegawai & Network/Web Scanner",
+    description="Aplikasi manajemen pegawai + scanner jaringan & website real-time",
+    version="1.0"
+)
 
-# ==========================================================
-# REGISTER ROUTER DENGAN PREFIX AMAN
-# ==========================================================
+# ===============================
+#  REGISTER ROUTERS
+# ===============================
 
-# Router Login / Register
-app.include_router(auth.router, tags=["Auth"])
+# Auth Routes
+app.include_router(
+    auth.router,
+    tags=["Auth"]
+)
 
-# Router Admin
+# Admin Routes
 app.include_router(
     admin.router,
     prefix="/admin",
     tags=["Admin"]
 )
 
-# Router Pegawai
+# Pegawai Routes
 app.include_router(
     pegawai.router,
     prefix="/pegawai",
     tags=["Pegawai"]
 )
 
+# Scan Routes
+app.include_router(
+    scan_router,
+    prefix="/scan",    # penting! jangan hapus
+    tags=["Scan"]
+)
 
-# ==========================================================
-# ROUTE HALAMAN UTAMA
-# ==========================================================
-
-# Arahkan root ke halaman login
+# ===============================
+#  ROOT REDIRECT
+# ===============================
 @app.get("/", include_in_schema=False)
 async def root():
     return RedirectResponse(url="/login")
 
-
-# ==========================================================
-# GLOBAL LOGOUT (AMAN UNTUK SEMUA USER)
-# ==========================================================
-
+# ===============================
+#  GLOBAL LOGOUT
+# ===============================
 @app.get("/logout", include_in_schema=False)
 async def logout(request: Request):
     response = RedirectResponse(url="/login", status_code=302)
