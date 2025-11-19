@@ -1,16 +1,26 @@
 # agent/parse_utils.py
 import re
 
+# ============================================
+# PARSER: netsh wlan show interfaces
+# ============================================
+
 def parse_netsh_interfaces(raw: str):
     data = {}
+
+    # ambil key: value
     for line in raw.splitlines():
-        if ':' in line:
-            k,v = line.split(':',1)
+        if ":" in line:
+            k, v = line.split(":", 1)
             data[k.strip().lower()] = v.strip()
+
+    # fungsi konversi angka
     def maybe_int(s):
-        if not s: return None
-        m = re.sub('[^0-9]', '', s)
+        if not s:
+            return None
+        m = re.sub(r"[^0-9]", "", s)
         return int(m) if m.isdigit() else None
+
     return {
         "ssid": data.get("ssid"),
         "state": data.get("state"),
@@ -22,18 +32,58 @@ def parse_netsh_interfaces(raw: str):
         "cipher": data.get("cipher")
     }
 
+
+# ============================================
+# PARSER: ipconfig /all
+# ============================================
+
 def parse_ipconfig(raw: str):
-    blocks = raw.split("\r\n\r\n")
-    for b in blocks:
-        if "Wireless LAN adapter" in b or "Ethernet adapter" in b:
-            lines = b.splitlines()
-            info = {}
-            for line in lines:
-                if ':' in line:
-                    k,v = line.split(':',1)
-                    info[k.strip()] = v.strip()
-            # return first block that contains IPv4
-            for k in info:
-                if "IPv4" in k:
-                    return {"ipv4": info.get(k), "gateway": info.get("Default Gateway")}
-    return {}
+    """
+    Parser diperbaiki:
+    - Menangani Default Gateway multiline
+    - Membersihkan IPv4 dari '(Preferred)'
+    - Compatible untuk Ethernet & WiFi
+    """
+
+    ipv4 = None
+    gateway = None
+
+    lines = raw.splitlines()
+
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+
+        # -------------------------------
+        # IPv4 Address
+        # -------------------------------
+        if "IPv4 Address" in stripped or ("IPv4" in stripped and ":" in stripped):
+            match = re.search(r"IPv4.*?:\s*([\d\.]+)", stripped)
+            if match:
+                ipv4 = match.group(1).strip()
+
+        # -------------------------------
+        # Default Gateway
+        # Format kemungkinan:
+        # Default Gateway . . . : 192.168.1.1
+        # Default Gateway . . . :
+        #                         192.168.1.1
+        # -------------------------------
+        if stripped.startswith("Default Gateway"):
+            parts = stripped.split(":", 1)
+
+            # case 1: gateway ada di baris yang sama
+            if len(parts) > 1 and parts[1].strip():
+                gw = parts[1].strip()
+                if re.match(r"^\d+\.\d+\.\d+\.\d+$", gw):
+                    gateway = gw
+
+            # case 2: gateway di baris berikutnya (multiline)
+            if gateway is None and i + 1 < len(lines):
+                next_line = lines[i+1].strip()
+                if re.match(r"^\d+\.\d+\.\d+\.\d+$", next_line):
+                    gateway = next_line
+
+    return {
+        "ipv4": ipv4,
+        "gateway": gateway
+    }

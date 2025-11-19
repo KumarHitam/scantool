@@ -1,4 +1,3 @@
-# app/routes/scan.py
 from fastapi import APIRouter, HTTPException, Depends, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 import asyncio, time, socket, json, subprocess, httpx
@@ -51,6 +50,63 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 # ======================================
+# SUMMARY HELPERS
+# ======================================
+
+def summarize_network(wifi, ip_data):
+    # Jika wifi tidak ada atau tidak connected
+    if not wifi or wifi.get("state") != "connected":
+        return "Tidak terhubung ke WiFi"
+
+    signal = wifi.get("signal_pct", 0)
+    gateway = ip_data.get("gateway") if isinstance(ip_data, dict) else None
+
+    # Jika gateway tidak ada -> tidak ada akses internet
+    if not gateway or str(gateway).strip() in ("", "0.0.0.0", "None"):
+        return "Tidak ada akses internet"
+
+    # Berdasarkan signal
+    if signal >= 80:
+        return "Sinyal sangat baik"
+    elif signal >= 60:
+        return "Sinyal baik"
+    elif signal >= 40:
+        return "Jaringan buruk"
+    return "Sinyal sangat buruk"
+
+def summarize_web(result):
+    # result: dict dengan keys status_code, elapsed_ms, error, dns
+    if result.get("error"):
+        # coba deteksi jenis error sederhana
+        err = result["error"].lower()
+        if "timed out" in err or "timeout" in err:
+            return "Website tidak dapat dijangkau (timeout)"
+        if "name or service not known" in err or "getaddrinfo" in err or "nodename nor servname" in err:
+            return "Domain tidak ditemukan"
+        return "Website tidak dapat diakses"
+
+    code = result.get("status_code")
+    latency = result.get("elapsed_ms") or 0
+
+    if code is None:
+        return "Tidak ada respon"
+
+    if 200 <= code < 300:
+        if latency < 300:
+            return "Website cepat"
+        elif latency < 1000:
+            return "Website lambat"
+        else:
+            return "Website sangat lambat"
+    if 300 <= code < 400:
+        return "Redirect (3xx)"
+    if 400 <= code < 500:
+        return "Client error (4xx)"
+    if 500 <= code < 600:
+        return "Server error (5xx)"
+    return "Status tidak diketahui"
+
+# ======================================
 # FUNGSI HTTP SCAN
 # ======================================
 
@@ -99,6 +155,9 @@ async def run_scan(payload: RunScanIn, db: Session = Depends(get_db)):
 
     result = await do_http_scan(url)
 
+    # generate web summary berdasarkan hasil
+    web_summary = summarize_web(result)
+
     rec = create_scan_history(
         db,
         url=result["url"],
@@ -117,11 +176,20 @@ async def run_scan(payload: RunScanIn, db: Session = Depends(get_db)):
             "url": rec.url,
             "status_code": rec.status_code,
             "latency_ms": rec.latency_ms,
+            "summary": web_summary,
             "created_at": str(rec.created_at)
         }
     })
 
-    return {"ok": True, "result": result, "id": rec.id}
+    return {"ok": True, "result": result, "summary": web_summary, "id": rec.id}
+
+# ======================================
+# ALIAS /scan/web → sama seperti /scan/run
+# ======================================
+
+@router.post("/web")
+async def scan_web_alias(payload: RunScanIn, db: Session = Depends(get_db)):
+    return await run_scan(payload, db)
 
 # ======================================
 # 2. BULK SCAN
@@ -147,6 +215,8 @@ async def bulk_scan(payload: BulkScanIn, db: Session = Depends(get_db)):
 
         async with semaphore:
             res = await do_http_scan(u)
+            web_summary = summarize_web(res)
+
             rec = create_scan_history(
                 db,
                 url=res["url"],
@@ -165,10 +235,13 @@ async def bulk_scan(payload: BulkScanIn, db: Session = Depends(get_db)):
                     "url": rec.url,
                     "status_code": rec.status_code,
                     "latency_ms": rec.latency_ms,
+                    "summary": web_summary,
                     "created_at": str(rec.created_at)
                 }
             })
 
+            # tambahkan summary ke hasil worker
+            res["summary"] = web_summary
             return res
 
     results = await asyncio.gather(*[worker(u) for u in urls])
@@ -222,6 +295,9 @@ async def scan_network(db: Session = Depends(get_db)):
         ip_raw = subprocess.check_output("ipconfig /all", shell=True, text=True)
         ip_data = parse_ipconfig(ip_raw)
 
+        # generate network summary
+        network_summary = summarize_network(wifi, ip_data)
+
         rec = create_scan_history(
             db,
             url="network://local",
@@ -239,11 +315,12 @@ async def scan_network(db: Session = Depends(get_db)):
                 "id": rec.id,
                 "wifi": wifi,
                 "ip": ip_data,
+                "summary": network_summary,
                 "created_at": str(rec.created_at)
             }
         })
 
-        return {"ok": True, "wifi": wifi, "ip": ip_data}
+        return {"ok": True, "wifi": wifi, "ip": ip_data, "summary": network_summary}
 
     except Exception as e:
         return {"ok": False, "error": str(e)}

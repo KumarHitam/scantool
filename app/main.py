@@ -46,11 +46,10 @@ app.include_router(
     tags=["Pegawai"]
 )
 
-# Scan Routes
+# Scan Routes (TIDAK pakai prefix lagi!)
+# Karena dalam scan.py sudah ada prefix="/scan"
 app.include_router(
-    scan_router,
-    prefix="/scan",    # penting! jangan hapus
-    tags=["Scan"]
+    scan_router
 )
 
 # ===============================
